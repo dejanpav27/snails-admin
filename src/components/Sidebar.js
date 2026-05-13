@@ -2,12 +2,12 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 
 const NAV = [
-  { to: '/',          label: 'Dashboard',  icon: '◈' },
-  { to: '/calendar',  label: 'Calendar',   icon: '◻' },
-  { to: '/bookings',  label: 'Bookings',   icon: '◉' },
-  { to: '/clients',   label: 'Clients',    icon: '◎' },
-  { to: '/services',  label: 'Services',   icon: '✦' },
-  { to: '/new',       label: 'New booking',icon: '+' },
+  { to: '/',          label: 'Dashboard',   icon: '◈' },
+  { to: '/calendar',  label: 'Calendar',    icon: '◻' },
+  { to: '/bookings',  label: 'Bookings',    icon: '◉' },
+  { to: '/clients',   label: 'Clients',     icon: '◎' },
+  { to: '/services',  label: 'Services',    icon: '✦' },
+  { to: '/new',       label: 'New booking', icon: '+' },
 ];
 
 export default function Sidebar() {
@@ -22,11 +22,17 @@ export default function Sidebar() {
       height: '100vh', position: 'sticky', top: 0,
     }}>
       {/* Logo */}
-      <div style={{ padding: '22px 20px 18px', borderBottom: '1px solid var(--p200)' }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--p800)', letterSpacing: .3 }}>
-          Snails
-        </div>
-        <div style={{ fontSize: 11, color: 'var(--p600)', marginTop: 2 }}>nail studio</div>
+      <div style={{
+        padding: '12px 16px 10px',
+        borderBottom: '1px solid var(--p200)',
+        background: '#1a0a0f',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <img
+          src="/logo.png"
+          alt="Snails — Nails by Sara Pudar"
+          style={{ width: 140, height: 'auto', display: 'block' }}
+        />
       </div>
 
       {/* Nav */}
