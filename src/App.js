@@ -1,16 +1,17 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/AuthContext';
-import Sidebar    from './components/Sidebar';
-import Login      from './pages/Login';
-import Dashboard  from './pages/Dashboard';
-import Calendar   from './pages/Calendar';
-import Bookings   from './pages/Bookings';
+import Sidebar      from './components/Sidebar';
+import Login        from './pages/Login';
+import Dashboard    from './pages/Dashboard';
+import Calendar     from './pages/Calendar';
+import Bookings     from './pages/Bookings';
 import BookingDetail from './pages/BookingDetail';
-import Clients    from './pages/Clients';
+import Clients      from './pages/Clients';
 import ClientDetail from './pages/ClientDetail';
-import Services   from './pages/Services';
-import NewBooking from './pages/NewBooking';
-import { Spinner } from './components/UI';
+import Services     from './pages/Services';
+import Schedule     from './pages/Schedule';
+import NewBooking   from './pages/NewBooking';
+import { Spinner }  from './components/UI';
 
 function RequireAuth() {
   const { admin, loading } = useAuth();
@@ -44,6 +45,7 @@ export default function App() {
             <Route path="/clients"       element={<Clients />} />
             <Route path="/clients/:id"   element={<ClientDetail />} />
             <Route path="/services"      element={<Services />} />
+            <Route path="/schedule"      element={<Schedule />} />
             <Route path="/new"           element={<NewBooking />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
