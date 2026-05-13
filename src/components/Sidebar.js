@@ -7,6 +7,7 @@ const NAV = [
   { to: '/bookings',  label: 'Bookings',    icon: '◉' },
   { to: '/clients',   label: 'Clients',     icon: '◎' },
   { to: '/services',  label: 'Services',    icon: '✦' },
+  { to: '/schedule',  label: 'Schedule',    icon: '⏱' },
   { to: '/new',       label: 'New booking', icon: '+' },
 ];
 
@@ -21,7 +22,6 @@ export default function Sidebar() {
       display: 'flex', flexDirection: 'column',
       height: '100vh', position: 'sticky', top: 0,
     }}>
-      {/* Logo */}
       <div style={{
         padding: '16px',
         borderBottom: '1px solid var(--p200)',
@@ -31,14 +31,10 @@ export default function Sidebar() {
         <img
           src="/logo.png"
           alt="Snails — Nails by Sara Pudar"
-          style={{
-            width: 150, height: 'auto', display: 'block',
-            mixBlendMode: 'multiply',
-          }}
+          style={{ width: 160, height: 'auto', display: 'block' }}
         />
       </div>
 
-      {/* Nav */}
       <nav style={{ flex: 1, padding: '12px 0', overflowY: 'auto' }}>
         {NAV.map(({ to, label, icon }) => (
           <NavLink key={to} to={to} end={to === '/'} style={({ isActive }) => ({
@@ -57,7 +53,6 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* Admin info + logout */}
       <div style={{ padding: '14px 20px', borderTop: '1px solid var(--p200)' }}>
         {admin && (
           <div style={{ marginBottom: 10 }}>
