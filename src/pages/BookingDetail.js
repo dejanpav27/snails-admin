@@ -4,6 +4,17 @@ import { getBooking, updateBookingStatus } from '../lib/api';
 import { formatDateTime, formatPrice } from '../lib/utils';
 import { Card, StatusBadge, Button, Avatar, Spinner } from '../components/UI';
 
+async function deleteBooking(id) {
+  const token = localStorage.getItem('snails_token');
+  const res = await fetch(`${process.env.REACT_APP_API_URL}/bookings/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to delete');
+  return data;
+}
+
 export default function BookingDetail() {
   const { id }    = useParams();
   const navigate  = useNavigate();
@@ -18,6 +29,16 @@ export default function BookingDetail() {
     if (status === 'cancelled' && !window.confirm('Cancel this booking?')) return;
     const updated = await updateBookingStatus(id, status);
     setBooking(b => ({ ...b, status: updated.booking.status }));
+  }
+
+  async function handleDelete() {
+    if (!window.confirm('Permanently delete this booking? This cannot be undone.')) return;
+    try {
+      await deleteBooking(id);
+      navigate('/bookings');
+    } catch (err) {
+      alert(err.message);
+    }
   }
 
   if (loading) return <div style={{ display:'flex',justifyContent:'center',padding:80 }}><Spinner /></div>;
@@ -46,6 +67,11 @@ export default function BookingDetail() {
         <div style={{ display: 'flex', gap: 8 }}>
           {booking.status === 'pending' && <Button size="sm" onClick={() => changeStatus('confirmed')}>Confirm</Button>}
           {booking.status !== 'cancelled' && <Button size="sm" variant="danger" onClick={() => changeStatus('cancelled')}>Cancel</Button>}
+          {booking.status === 'cancelled' && (
+            <Button size="sm" variant="danger" onClick={handleDelete}>
+              🗑 Delete permanently
+            </Button>
+          )}
         </div>
       </div>
 
