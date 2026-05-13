@@ -23,15 +23,18 @@ export default function Sidebar() {
     }}>
       {/* Logo */}
       <div style={{
-        padding: '12px 16px 10px',
+        padding: '16px',
         borderBottom: '1px solid var(--p200)',
-        background: '#1a0a0f',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'var(--p100)',
       }}>
         <img
           src="/logo.png"
           alt="Snails — Nails by Sara Pudar"
-          style={{ width: 140, height: 'auto', display: 'block' }}
+          style={{
+            width: 150, height: 'auto', display: 'block',
+            mixBlendMode: 'multiply',
+          }}
         />
       </div>
 
