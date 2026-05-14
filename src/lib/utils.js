@@ -16,7 +16,7 @@ export function formatDateTime(iso) {
 }
 
 export function formatPrice(val) {
-  return `£${Number(val).toFixed(2)}`;
+  return `${Number(val).toFixed(0)} RSD`;
 }
 
 export function toDateString(date) {
