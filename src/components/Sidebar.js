@@ -1,6 +1,9 @@
-import { NavLink } from 'react-router-dom';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import { Button } from './UI';
+import { getNotifications, markAllNotificationsRead } from '../lib/api';
+import { formatDateTime } from '../lib/utils';
 
 const NAV = [
   { to: '/',          label: 'Dashboard',   icon: '◈' },
@@ -12,8 +15,68 @@ const NAV = [
   { to: '/new',       label: 'New booking', icon: '+' },
 ];
 
+function notificationLabel(n) {
+  switch (n.type) {
+    case 'new_booking': return `New booking — ${n.client_name}`;
+    case 'confirmed':   return `Confirmed — ${n.client_name}`;
+    case 'cancelled':   return `Cancelled — ${n.client_name}`;
+    default:            return n.client_name;
+  }
+}
+
+function notificationIcon(type) {
+  switch (type) {
+    case 'new_booking': return '🔔';
+    case 'confirmed':   return '✓';
+    case 'cancelled':   return '✕';
+    default:            return '•';
+  }
+}
+
 export default function Sidebar() {
   const { admin, logout } = useAuth();
+  const navigate = useNavigate();
+  const [notifications, setNotifications] = useState([]);
+  const [unread, setUnread]               = useState(0);
+  const [open, setOpen]                   = useState(false);
+  const bellRef = useRef(null);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const data = await getNotifications();
+      setNotifications(data.notifications || []);
+      setUnread(data.unread_count || 0);
+    } catch {
+      // silently fail
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (bellRef.current && !bellRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  async function handleOpen() {
+    setOpen(o => !o);
+    if (!open && unread > 0) {
+      try {
+        await markAllNotificationsRead();
+        setUnread(0);
+        setNotifications(n => n.map(x => ({ ...x, read: true })));
+      } catch {}
+    }
+  }
 
   return (
     <aside style={{
@@ -24,16 +87,97 @@ export default function Sidebar() {
       height: '100vh', position: 'sticky', top: 0,
     }}>
       <div style={{
-        padding: '16px',
+        padding: '12px 16px',
         borderBottom: '1px solid var(--p200)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         background: 'var(--p100)',
       }}>
         <img
           src="/logo.png"
           alt="Snails — Nails by Sara Pudar"
-          style={{ width: 160, height: 'auto', display: 'block' }}
+          style={{ width: 130, height: 'auto', display: 'block' }}
         />
+
+        <div ref={bellRef} style={{ position: 'relative' }}>
+          <button
+            onClick={handleOpen}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: 4, borderRadius: 8, position: 'relative',
+              fontSize: 18, color: 'var(--p700)',
+              display: 'flex', alignItems: 'center',
+            }}
+            title="Notifications"
+          >
+            🔔
+            {unread > 0 && (
+              <span style={{
+                position: 'absolute', top: 0, right: 0,
+                background: '#d4537e', color: '#fff',
+                fontSize: 9, fontWeight: 600,
+                width: 16, height: 16, borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {unread > 9 ? '9+' : unread}
+              </span>
+            )}
+          </button>
+
+          {open && (
+            <div style={{
+              position: 'absolute', top: '110%', right: 0,
+              width: 300, maxHeight: 400, overflowY: 'auto',
+              background: '#fff', border: '1px solid var(--p200)',
+              borderRadius: 12, boxShadow: '0 8px 24px rgba(114,36,62,.12)',
+              zIndex: 999,
+            }}>
+              <div style={{
+                padding: '12px 14px', borderBottom: '1px solid var(--p100)',
+              }}>
+                <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--p800)' }}>Notifications</span>
+              </div>
+
+              {notifications.length === 0 ? (
+                <div style={{ padding: '24px 14px', textAlign: 'center', fontSize: 13, color: 'var(--p400)' }}>
+                  No notifications yet
+                </div>
+              ) : (
+                notifications.map(n => (
+                  <div
+                    key={n.id}
+                    onClick={() => { navigate(`/bookings/${n.booking_id}`); setOpen(false); }}
+                    style={{
+                      padding: '10px 14px', cursor: 'pointer',
+                      borderBottom: '1px solid var(--p100)',
+                      background: n.read ? '#fff' : '#fff8fb',
+                      transition: 'background .1s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--p100)'}
+                    onMouseLeave={e => e.currentTarget.style.background = n.read ? '#fff' : '#fff8fb'}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      <span style={{ fontSize: 14, marginTop: 1 }}>{notificationIcon(n.type)}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 12, fontWeight: n.read ? 400 : 500, color: 'var(--p800)' }}>
+                          {notificationLabel(n)}
+                        </div>
+                        {n.service_label && (
+                          <div style={{ fontSize: 11, color: 'var(--p600)', marginTop: 1 }}>{n.service_label}</div>
+                        )}
+                        {n.booked_at && (
+                          <div style={{ fontSize: 11, color: 'var(--p400)', marginTop: 1 }}>{formatDateTime(n.booked_at)}</div>
+                        )}
+                      </div>
+                      {!n.read && (
+                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--p600)', marginTop: 4, flexShrink: 0 }} />
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <nav style={{ flex: 1, padding: '12px 0', overflowY: 'auto' }}>
@@ -61,7 +205,6 @@ export default function Sidebar() {
             <div style={{ fontSize: 11, color: 'var(--p600)' }}>{admin.email}</div>
           </div>
         )}
-        {/* FIX: use Button component instead of raw button */}
         <Button variant="outline" size="sm" onClick={logout} style={{ width: '100%', justifyContent: 'center' }}>
           Sign out
         </Button>

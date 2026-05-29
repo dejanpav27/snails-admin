@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getBookings, updateBookingStatus } from '../lib/api';
-import { formatTime, formatDate, formatPrice, toDateString } from '../lib/utils';
+import { formatTime, formatDate, formatDateTime, formatPrice, toDateString } from '../lib/utils';
 import { Card, StatCard, StatusBadge, Button, Avatar, Spinner, Empty } from '../components/UI';
 import { useAuth } from '../lib/AuthContext';
 
@@ -10,8 +10,10 @@ export default function Dashboard() {
   const navigate  = useNavigate();
   const today     = toDateString(new Date());
 
-  const [bookings, setBookings] = useState([]);
-  const [loading,  setLoading]  = useState(true);
+  const [bookings,        setBookings]        = useState([]);
+  const [pendingAll,      setPendingAll]      = useState([]);
+  const [loading,         setLoading]         = useState(true);
+  const [loadingPending,  setLoadingPending]  = useState(true);
 
   useEffect(() => {
     getBookings({ date: today })
@@ -20,20 +22,29 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, [today]);
 
+  useEffect(() => {
+    // Load ALL pending bookings (not just today)
+    getBookings({ status: 'pending' })
+      .then(setPendingAll)
+      .catch(console.error)
+      .finally(() => setLoadingPending(false));
+  }, []);
+
   async function confirm(id) {
     await updateBookingStatus(id, 'confirmed');
     setBookings(b => b.map(x => x.id === id ? { ...x, status: 'confirmed' } : x));
+    setPendingAll(b => b.filter(x => x.id !== id));
   }
+
   async function cancel(id) {
     if (!window.confirm('Cancel this booking?')) return;
     await updateBookingStatus(id, 'cancelled');
     setBookings(b => b.map(x => x.id === id ? { ...x, status: 'cancelled' } : x));
+    setPendingAll(b => b.filter(x => x.id !== id));
   }
 
   const active    = bookings.filter(b => b.status !== 'cancelled');
   const confirmed = bookings.filter(b => b.status === 'confirmed');
-  const pending   = bookings.filter(b => b.status === 'pending');
-  // FIX: use total_price (multi-service) with fallback to service.price
   const revenue   = active.reduce((s, b) => s + Number(b.total_price ?? b.service?.price ?? 0), 0);
 
   const greeting = (() => {
@@ -62,11 +73,39 @@ export default function Dashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
         <StatCard label="Today's bookings" value={active.length} sub="appointments" />
         <StatCard label="Confirmed" value={confirmed.length} sub="ready" />
-        <StatCard label="Pending" value={pending.length} sub="needs action" />
+        <StatCard label="Pending requests" value={pendingAll.length} sub="needs action" />
         <StatCard label="Today's revenue" value={formatPrice(revenue)} sub="from active bookings" />
       </div>
 
-      {/* Booking list */}
+      {/* Pending requests section */}
+      {!loadingPending && pendingAll.length > 0 && (
+        <Card style={{ marginBottom: 20, border: '1px solid #ffb3d1' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h2 style={{ fontSize: 15, fontWeight: 500, color: 'var(--p800)' }}>Pending requests</h2>
+              <span style={{
+                background: '#d4537e', color: '#fff',
+                fontSize: 11, fontWeight: 600,
+                padding: '2px 8px', borderRadius: 99,
+              }}>
+                {pendingAll.length}
+              </span>
+            </div>
+            <button onClick={() => navigate('/bookings?status=pending')} style={{ fontSize: 12, color: 'var(--p600)', background: 'none', border: 'none', cursor: 'pointer' }}>
+              View all →
+            </button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {pendingAll
+              .sort((a, b) => new Date(a.booked_at) - new Date(b.booked_at))
+              .map(booking => (
+                <PendingRow key={booking.id} booking={booking} onConfirm={confirm} onCancel={cancel} />
+              ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Today's schedule */}
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h2 style={{ fontSize: 15, fontWeight: 500, color: 'var(--p800)' }}>Today's schedule</h2>
@@ -77,14 +116,15 @@ export default function Dashboard() {
 
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}><Spinner /></div>
-        ) : bookings.length === 0 ? (
-          <Empty message="No appointments today" />
+        ) : bookings.filter(b => b.status !== 'cancelled').length === 0 ? (
+          <Empty message="No confirmed appointments today" />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {bookings
+              .filter(b => b.status === 'confirmed')
               .sort((a, b) => new Date(a.booked_at) - new Date(b.booked_at))
               .map(booking => (
-                <BookingRow key={booking.id} booking={booking} onConfirm={confirm} onCancel={cancel} />
+                <BookingRow key={booking.id} booking={booking} />
               ))}
           </div>
         )}
@@ -93,14 +133,44 @@ export default function Dashboard() {
   );
 }
 
-function BookingRow({ booking, onConfirm, onCancel }) {
+function PendingRow({ booking, onConfirm, onCancel }) {
   const navigate = useNavigate();
-
-  // FIX: show all services for multi-service bookings
   const serviceLabel = booking.services && booking.services.length > 1
     ? booking.services.map(s => s.name).join(' + ')
     : booking.services?.[0]?.name || booking.service?.name || '—';
+  const duration = booking.total_duration_mins ?? booking.service?.duration_mins ?? 0;
+  const price    = booking.total_price ?? booking.service?.price ?? 0;
 
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 12,
+      padding: '10px 12px',
+      background: '#fff8fb', borderRadius: 'var(--radius-md)',
+      border: '1px solid #ffb3d1',
+    }}>
+      <Avatar name={booking.client.name} size={32} />
+      <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => navigate(`/bookings/${booking.id}`)}>
+        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--p800)' }}>{booking.client.name}</div>
+        <div style={{ fontSize: 11, color: 'var(--p600)' }}>
+          {serviceLabel} · {duration} min · {formatPrice(price)}
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--p400)', marginTop: 2 }}>
+          {formatDateTime(booking.booked_at)}
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 6 }}>
+        <Button size="sm" onClick={() => onConfirm(booking.id)}>Confirm</Button>
+        <Button size="sm" variant="ghost" onClick={() => onCancel(booking.id)}>Cancel</Button>
+      </div>
+    </div>
+  );
+}
+
+function BookingRow({ booking }) {
+  const navigate = useNavigate();
+  const serviceLabel = booking.services && booking.services.length > 1
+    ? booking.services.map(s => s.name).join(' + ')
+    : booking.services?.[0]?.name || booking.service?.name || '—';
   const duration = booking.total_duration_mins ?? booking.service?.duration_mins ?? 0;
   const price    = booking.total_price ?? booking.service?.price ?? 0;
 
@@ -128,12 +198,6 @@ function BookingRow({ booking, onConfirm, onCancel }) {
         </div>
       </div>
       <StatusBadge status={booking.status} />
-      {booking.status === 'pending' && (
-        <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: 6 }}>
-          <Button size="sm" onClick={() => onConfirm(booking.id)}>Confirm</Button>
-          <Button size="sm" variant="ghost" onClick={() => onCancel(booking.id)}>Cancel</Button>
-        </div>
-      )}
     </div>
   );
 }

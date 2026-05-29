@@ -64,3 +64,10 @@ export const createClient = (data) =>
   request('/clients', { method: 'POST', body: JSON.stringify(data) });
 export const updateClient = (id, data) =>
   request(`/clients/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+
+// Notifications
+export const getNotifications = () => request('/notifications');
+export const markAllNotificationsRead = () =>
+  request('/notifications/read-all', { method: 'PATCH' });
+export const markNotificationRead = (id) =>
+  request(`/notifications/${id}/read`, { method: 'PATCH' });
