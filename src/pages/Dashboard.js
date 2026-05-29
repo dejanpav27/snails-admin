@@ -33,7 +33,8 @@ export default function Dashboard() {
   const active    = bookings.filter(b => b.status !== 'cancelled');
   const confirmed = bookings.filter(b => b.status === 'confirmed');
   const pending   = bookings.filter(b => b.status === 'pending');
-  const revenue   = active.reduce((s, b) => s + Number(b.service.price), 0);
+  // FIX: use total_price (multi-service) with fallback to service.price
+  const revenue   = active.reduce((s, b) => s + Number(b.total_price ?? b.service?.price ?? 0), 0);
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -94,6 +95,15 @@ export default function Dashboard() {
 
 function BookingRow({ booking, onConfirm, onCancel }) {
   const navigate = useNavigate();
+
+  // FIX: show all services for multi-service bookings
+  const serviceLabel = booking.services && booking.services.length > 1
+    ? booking.services.map(s => s.name).join(' + ')
+    : booking.services?.[0]?.name || booking.service?.name || '—';
+
+  const duration = booking.total_duration_mins ?? booking.service?.duration_mins ?? 0;
+  const price    = booking.total_price ?? booking.service?.price ?? 0;
+
   return (
     <div
       onClick={() => navigate(`/bookings/${booking.id}`)}
@@ -114,7 +124,7 @@ function BookingRow({ booking, onConfirm, onCancel }) {
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--p800)' }}>{booking.client.name}</div>
         <div style={{ fontSize: 11, color: 'var(--p600)' }}>
-          {booking.service.name} · {booking.service.duration_mins} min · {formatPrice(booking.service.price)}
+          {serviceLabel} · {duration} min · {formatPrice(price)}
         </div>
       </div>
       <StatusBadge status={booking.status} />

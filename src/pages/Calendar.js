@@ -15,7 +15,8 @@ export default function Calendar() {
 
   const weekStart = startOfWeek(week, { weekStartsOn: 1 });
   const weekEnd   = endOfWeek(week, { weekStartsOn: 1 });
-  const days      = eachDayOfInterval({ start: weekStart, end: weekEnd }).slice(0, 5); // Mon–Fri
+  // FIX: .slice(0, 6) to include Saturday (was .slice(0, 5) Mon–Fri only)
+  const days      = eachDayOfInterval({ start: weekStart, end: weekEnd }).slice(0, 6);
 
   useEffect(() => {
     setLoading(true);
@@ -31,6 +32,18 @@ export default function Calendar() {
     return bookings
       .filter(b => b.booked_at.startsWith(ds) && b.status !== 'cancelled')
       .sort((a, b) => new Date(a.booked_at) - new Date(b.booked_at));
+  }
+
+  // FIX: show all services for multi-service bookings
+  function bookingLabel(b) {
+    if (b.services && b.services.length > 1) {
+      return b.services.map(s => s.name).join(' + ');
+    }
+    return b.services?.[0]?.name || b.service?.name || '—';
+  }
+
+  function bookingPrice(b) {
+    return formatPrice(b.total_price ?? b.service?.price ?? 0);
   }
 
   return (
@@ -108,7 +121,7 @@ export default function Calendar() {
                             >
                               <div style={{ fontWeight: 500 }}>{formatTime(b.booked_at)} {b.client.name}</div>
                               <div style={{ color: 'var(--p600)', marginTop: 1 }}>
-                                {b.service.name} · {formatPrice(b.service.price)}
+                                {bookingLabel(b)} · {bookingPrice(b)}
                               </div>
                             </div>
                           ))}

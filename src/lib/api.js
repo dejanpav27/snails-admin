@@ -4,7 +4,8 @@ function getToken() {
   return localStorage.getItem('snails_token');
 }
 
-async function request(path, options = {}) {
+// FIX: exported so BookingDetail can use it for delete (avoids raw fetch with no 401 handling)
+export async function request(path, options = {}) {
   const token = getToken();
   const headers = { 'Content-Type': 'application/json', ...options.headers };
   if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -34,9 +35,13 @@ export const createService = (data) => request('/services', { method: 'POST', bo
 export const updateService = (id, data) => request(`/services/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const deleteService = (id) => request(`/services/${id}`, { method: 'DELETE' });
 
-// Availability
-export const getAvailability = (date, serviceId) =>
-  request(`/availability?date=${date}&service_id=${serviceId}`);
+// Availability — FIX: supports both single serviceId and array of serviceIds
+export const getAvailability = (date, serviceId, serviceIds) => {
+  if (serviceIds && serviceIds.length > 0) {
+    return request(`/availability?date=${date}&service_ids=${serviceIds.join(',')}`);
+  }
+  return request(`/availability?date=${date}&service_id=${serviceId}`);
+};
 
 // Bookings
 export const getBookings = (params = {}) => {

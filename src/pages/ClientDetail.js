@@ -33,7 +33,10 @@ export default function ClientDetail() {
   if (loading) return <div style={{ display:'flex',justifyContent:'center',padding:80 }}><Spinner /></div>;
   if (!client)  return <div style={{ padding:28,color:'var(--p600)' }}>Client not found.</div>;
 
-  const totalSpend = (client.bookings||[]).filter(b=>b.status!=='cancelled').reduce((s,b)=>s+Number(b.price),0);
+  // FIX: use b.price which now comes from total_price via the API fix
+  const totalSpend = (client.bookings||[])
+    .filter(b => b.status !== 'cancelled')
+    .reduce((s, b) => s + Number(b.price ?? 0), 0);
 
   return (
     <div style={{ padding: 28, maxWidth: 760 }}>
@@ -112,6 +115,7 @@ export default function ClientDetail() {
                   onMouseLeave={e => e.currentTarget.style.background='transparent'}
                 >
                   <td style={{ padding:'10px 16px',fontSize:13,color:'var(--p700)' }}>{formatDateTime(b.booked_at)}</td>
+                  {/* FIX: service_name now includes all services joined with ' + ' from the API */}
                   <td style={{ padding:'10px 16px',fontSize:13,color:'var(--p800)',fontWeight:500 }}>{b.service_name}</td>
                   <td style={{ padding:'10px 16px',fontSize:13,color:'var(--p600)' }}>{b.duration_mins} min</td>
                   <td style={{ padding:'10px 16px',fontSize:13,fontWeight:500,color:'var(--p600)' }}>{formatPrice(b.price)}</td>

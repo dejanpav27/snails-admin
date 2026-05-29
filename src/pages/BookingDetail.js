@@ -1,18 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getBooking, updateBookingStatus } from '../lib/api';
+import { getBooking, updateBookingStatus, request } from '../lib/api';
 import { formatDateTime, formatPrice } from '../lib/utils';
 import { Card, StatusBadge, Button, Avatar, Spinner } from '../components/UI';
 
+// FIX: use request() from api.js so 401s clear token and redirect to /login
 async function deleteBooking(id) {
-  const token = localStorage.getItem('snails_token');
-  const res = await fetch(`${process.env.REACT_APP_API_URL}/bookings/${id}`, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Failed to delete');
-  return data;
+  return request(`/bookings/${id}`, { method: 'DELETE' });
 }
 
 export default function BookingDetail() {
@@ -43,6 +37,14 @@ export default function BookingDetail() {
 
   if (loading) return <div style={{ display:'flex',justifyContent:'center',padding:80 }}><Spinner /></div>;
   if (!booking) return <div style={{ padding: 28, color: 'var(--p600)' }}>Booking not found.</div>;
+
+  // FIX: derive service info from services[] array for multi-service bookings
+  const services    = booking.services?.length > 0 ? booking.services : null;
+  const serviceLabel = services
+    ? services.map(s => s.name).join(' + ')
+    : booking.service_name || '—';
+  const duration = booking.total_duration_mins ?? booking.duration_mins ?? 0;
+  const price    = booking.total_price ?? booking.price ?? 0;
 
   return (
     <div style={{ padding: 28, maxWidth: 680 }}>
@@ -98,13 +100,26 @@ export default function BookingDetail() {
         {/* Appointment */}
         <Card>
           <h3 style={{ fontSize: 12, fontWeight: 500, color: 'var(--p600)', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 14 }}>Appointment</h3>
-          <Row label="Service"  value={booking.service_name} />
+          <Row label="Service"  value={serviceLabel} />
           <Row label="Date"     value={formatDateTime(booking.booked_at)} />
-          <Row label="Duration" value={`${booking.duration_mins} min`} />
-          <Row label="Price"    value={formatPrice(booking.price)} highlight />
+          <Row label="Duration" value={`${duration} min`} />
+          <Row label="Price"    value={formatPrice(price)} highlight />
           {booking.client_notes && <Row label="Notes" value={booking.client_notes} />}
         </Card>
       </div>
+
+      {/* Service breakdown for multi-service bookings */}
+      {services && services.length > 1 && (
+        <Card style={{ marginTop: 16 }}>
+          <h3 style={{ fontSize: 12, fontWeight: 500, color: 'var(--p600)', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 12 }}>Services breakdown</h3>
+          {services.map((s, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--p100)', fontSize: 13 }}>
+              <span style={{ color: 'var(--p800)' }}>{s.name}</span>
+              <span style={{ color: 'var(--p600)' }}>{s.duration_mins} min · {formatPrice(s.price)}</span>
+            </div>
+          ))}
+        </Card>
+      )}
 
       <p style={{ fontSize: 11, color: 'var(--p400)', marginTop: 16 }}>
         Booked on {formatDateTime(booking.created_at)}

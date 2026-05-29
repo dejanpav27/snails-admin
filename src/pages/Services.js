@@ -130,7 +130,7 @@ function ServiceModal({ open, service, onClose, onSaved }) {
         </Select>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <Input label="Duration (mins) *" type="number" min={5} value={form.duration_mins} onChange={set('duration_mins')} />
-          <Input label="Price (£) *" type="number" min={0} step={0.5} value={form.price} onChange={set('price')} placeholder="35.00" />
+          <Input label="Price (RSD) *" type="number" min={0} step={0.5} value={form.price} onChange={set('price')} placeholder="35.00" />
         </div>
         {error && <p style={{ fontSize: 13, color: '#dc2626' }}>{error}</p>}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
