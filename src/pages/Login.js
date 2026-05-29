@@ -33,7 +33,7 @@ export default function Login() {
       <div style={{ width: '100%', maxWidth: 380 }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 36, color: 'var(--p800)' }}>Snails</div>
+          <img src="/logo.png" alt="Snails" style={{ width: 180, height: "auto" }} />
           <div style={{ fontSize: 13, color: 'var(--p600)', marginTop: 4 }}>studio dashboard</div>
         </div>
 
