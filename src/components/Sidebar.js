@@ -97,7 +97,7 @@ export default function Sidebar() {
           alt="Snails — Nails by Sara Pudar"
           style={{ width: 130, height: 'auto', display: 'block' }}
         />
-
+      </div>
 
       <nav style={{ flex: 1, padding: '12px 0', overflowY: 'auto' }}>
         {NAV.map(({ to, label, icon }) => (
