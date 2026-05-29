@@ -1,7 +1,7 @@
 import { statusColor } from '../lib/utils';
 
 /* ── Button ─────────────────────────────────────────────── */
-export function Button({ children, variant = 'primary', size = 'md', loading, className = '', ...props }) {
+export function Button({ children, variant = 'primary', size = 'md', loading, className = '', style: styleProp = {}, ...props }) {
   const base = {
     display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'inherit',
     fontWeight: 500, borderRadius: 'var(--radius-md)', border: 'none',
@@ -21,7 +21,7 @@ export function Button({ children, variant = 'primary', size = 'md', loading, cl
     danger:   { background: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5' },
   };
   return (
-    <button style={{ ...base, ...sizes[size], ...variants[variant] }} className={className} {...props}>
+    <button style={{ ...base, ...sizes[size], ...variants[variant], ...styleProp }} className={className} {...props}>
       {loading ? <Spinner size={14} /> : null}
       {children}
     </button>

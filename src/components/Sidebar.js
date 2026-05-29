@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
+import { Button } from './UI';
 
 const NAV = [
   { to: '/',          label: 'Dashboard',   icon: '◈' },
@@ -60,14 +61,10 @@ export default function Sidebar() {
             <div style={{ fontSize: 11, color: 'var(--p600)' }}>{admin.email}</div>
           </div>
         )}
-        <button onClick={logout} style={{
-          width: '100%', padding: '7px 12px', fontSize: 12,
-          background: 'transparent', border: '1px solid var(--p300)',
-          borderRadius: 'var(--radius-md)', color: 'var(--p700)',
-          cursor: 'pointer', textAlign: 'left',
-        }}>
+        {/* FIX: use Button component instead of raw button */}
+        <Button variant="outline" size="sm" onClick={logout} style={{ width: '100%', justifyContent: 'center' }}>
           Sign out
-        </button>
+        </Button>
       </div>
     </aside>
   );
