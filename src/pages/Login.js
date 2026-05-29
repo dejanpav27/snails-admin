@@ -32,7 +32,7 @@ export default function Login() {
     }}>
       <div style={{ width: '100%', maxWidth: 380 }}>
         {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 36 }}>
+        <div style={{ textAlign: 'center', marginBottom: 12 }}>
           <img src="/logo.png" alt="Snails" style={{ width: 280, height: "auto" }} />
           
         </div>
