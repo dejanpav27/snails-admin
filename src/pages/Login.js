@@ -27,7 +27,7 @@ export default function Login() {
   return (
     <div style={{
       minHeight: '100vh', display: 'flex',
-      alignItems: 'center', justifyContent: 'center',
+      alignItems: 'center', justifyContent: 'flex-start', paddingTop: 60,
       background: 'var(--p50)', padding: 20,
     }}>
       <div style={{ width: '100%', maxWidth: 380 }}>
