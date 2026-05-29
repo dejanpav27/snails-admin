@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getBookings, updateBookingStatus } from '../lib/api';
+import { getBookings, updateBookingStatus, getNotifications, markAllNotificationsRead } from '../lib/api';
 import { formatTime, formatDate, formatDateTime, formatPrice, toDateString } from '../lib/utils';
 import { Card, StatCard, StatusBadge, Button, Avatar, Spinner, Empty } from '../components/UI';
 import { useAuth } from '../lib/AuthContext';
@@ -14,6 +14,39 @@ export default function Dashboard() {
   const [pendingAll,      setPendingAll]      = useState([]);
   const [loading,         setLoading]         = useState(true);
   const [loadingPending,  setLoadingPending]  = useState(true);
+  const [notifications,   setNotifications]   = useState([]);
+  const [unread,          setUnread]          = useState(0);
+  const [bellOpen,        setBellOpen]        = useState(false);
+  const bellRef = useRef(null);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const data = await getNotifications();
+      setNotifications(data.notifications || []);
+      setUnread(data.unread_count || 0);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (bellRef.current && !bellRef.current.contains(e.target)) setBellOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  async function handleBellOpen() {
+    setBellOpen(o => !o);
+    if (!bellOpen && unread > 0) {
+      try { await markAllNotificationsRead(); setUnread(0); setNotifications(n => n.map(x => ({ ...x, read: true }))); } catch {}
+    }
+  }
 
   useEffect(() => {
     getBookings({ date: today })
@@ -66,7 +99,82 @@ export default function Dashboard() {
             {formatDate(new Date().toISOString())}
           </p>
         </div>
-        <Button onClick={() => navigate('/new')}>+ New booking</Button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* Bell */}
+          <div ref={bellRef} style={{ position: 'relative' }}>
+            <button
+              onClick={handleBellOpen}
+              style={{
+                width: 36, height: 36,
+                background: 'var(--p100)', border: '1px solid var(--p200)',
+                borderRadius: 10, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                position: 'relative', transition: 'background .15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--p200)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'var(--p100)'}
+              title="Notifications"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d4537e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              {unread > 0 && (
+                <span style={{
+                  position: 'absolute', top: -4, right: -4,
+                  background: '#d4537e', color: '#fff',
+                  fontSize: 9, fontWeight: 600,
+                  width: 15, height: 15, borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {unread > 9 ? '9+' : unread}
+                </span>
+              )}
+            </button>
+            {bellOpen && (
+              <div style={{
+                position: 'absolute', top: '110%', right: 0,
+                width: 300, maxHeight: 400, overflowY: 'auto',
+                background: '#fff', border: '1px solid var(--p200)',
+                borderRadius: 12, boxShadow: '0 8px 24px rgba(114,36,62,.12)',
+                zIndex: 999,
+              }}>
+                <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--p100)' }}>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--p800)' }}>Notifications</span>
+                </div>
+                {notifications.length === 0 ? (
+                  <div style={{ padding: '24px 14px', textAlign: 'center', fontSize: 13, color: 'var(--p400)' }}>No notifications yet</div>
+                ) : (
+                  notifications.map(n => (
+                    <div
+                      key={n.id}
+                      onClick={() => { navigate(`/bookings/${n.booking_id}`); setBellOpen(false); }}
+                      style={{
+                        padding: '10px 14px', cursor: 'pointer',
+                        borderBottom: '1px solid var(--p100)',
+                        background: n.read ? '#fff' : '#fff8fb',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--p100)'}
+                      onMouseLeave={e => e.currentTarget.style.background = n.read ? '#fff' : '#fff8fb'}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 12, fontWeight: n.read ? 400 : 500, color: 'var(--p800)' }}>
+                            {n.type === 'new_booking' ? `New booking — ${n.client_name}` : n.type === 'confirmed' ? `Confirmed — ${n.client_name}` : `Cancelled — ${n.client_name}`}
+                          </div>
+                          {n.service_label && <div style={{ fontSize: 11, color: 'var(--p600)', marginTop: 1 }}>{n.service_label}</div>}
+                          {n.booked_at && <div style={{ fontSize: 11, color: 'var(--p400)', marginTop: 1 }}>{formatDateTime(n.booked_at)}</div>}
+                        </div>
+                        {!n.read && <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--p600)', marginTop: 4, flexShrink: 0 }} />}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+          <Button onClick={() => navigate('/new')}>+ New booking</Button>
+        </div>
       </div>
 
       {/* Stats */}
