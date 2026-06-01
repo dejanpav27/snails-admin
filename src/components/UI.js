@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { statusColor } from '../lib/utils';
 
 /* ── Button ─────────────────────────────────────────────── */
@@ -31,23 +32,29 @@ export function Button({ children, variant = 'primary', size = 'md', loading, cl
 /* ── Badge ──────────────────────────────────────────────── */
 export function StatusBadge({ status }) {
   const c = statusColor(status);
+  const glow = status === 'confirmed'
+    ? '0 0 0 0 rgba(46,125,50,.3)'
+    : status === 'pending'
+    ? '0 0 0 0 rgba(245,127,23,.3)'
+    : 'none';
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 5,
       background: c.bg, color: c.text,
       fontSize: 11, fontWeight: 500,
       padding: '3px 9px', borderRadius: 'var(--radius-full)',
+      animation: glow !== 'none' ? 'pulse-glow 2.5s ease-in-out infinite' : 'none',
     }}>
       <span style={{ width: 6, height: 6, borderRadius: '50%', background: c.dot, flexShrink: 0 }} />
-      {status.charAt(0).toUpperCase() + status.slice(1)}
+      {status === 'no_show' ? 'No-show' : status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
   );
 }
 
 /* ── Card ───────────────────────────────────────────────── */
-export function Card({ children, style = {}, className = '' }) {
+export function Card({ children, style = {}, className = '', hover = false }) {
   return (
-    <div className={className} style={{
+    <div className={`${className} ${hover ? 'card-hover' : ''}`} style={{
       background: 'var(--white)', border: '1px solid var(--p200)',
       borderRadius: 'var(--radius-lg)', padding: '18px 20px',
       ...style,
@@ -67,6 +74,7 @@ export function Input({ label, error, style = {}, ...props }) {
           padding: '8px 12px', fontSize: 13, color: 'var(--p800)',
           background: 'var(--white)', border: `1px solid ${error ? '#fca5a5' : 'var(--p200)'}`,
           borderRadius: 'var(--radius-md)', outline: 'none', width: '100%',
+          transition: 'border-color .15s',
           ...style,
         }}
         onFocus={e => e.target.style.borderColor = 'var(--p400)'}
@@ -88,6 +96,7 @@ export function Select({ label, error, children, style = {}, ...props }) {
           padding: '8px 12px', fontSize: 13, color: 'var(--p800)',
           background: 'var(--white)', border: `1px solid ${error ? '#fca5a5' : 'var(--p200)'}`,
           borderRadius: 'var(--radius-md)', outline: 'none', width: '100%',
+          transition: 'border-color .15s',
           ...style,
         }}
         {...props}
@@ -110,7 +119,7 @@ export function Textarea({ label, style = {}, ...props }) {
           padding: '8px 12px', fontSize: 13, color: 'var(--p800)',
           background: 'var(--white)', border: '1px solid var(--p200)',
           borderRadius: 'var(--radius-md)', outline: 'none', width: '100%',
-          resize: 'vertical', ...style,
+          resize: 'vertical', transition: 'border-color .15s', ...style,
         }}
         {...props}
       />
@@ -128,6 +137,7 @@ export function Modal({ open, onClose, title, children, width = 440 }) {
         position: 'fixed', inset: 0, background: 'rgba(114,36,62,.15)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         zIndex: 1000, padding: 20,
+        animation: 'fadeIn .15s ease',
       }}
     >
       <div
@@ -136,6 +146,7 @@ export function Modal({ open, onClose, title, children, width = 440 }) {
           background: 'var(--white)', borderRadius: 'var(--radius-xl)',
           border: '1px solid var(--p200)', padding: 24,
           width: '100%', maxWidth: width, maxHeight: '90vh', overflowY: 'auto',
+          animation: 'scaleIn .18s ease',
         }}
       >
         {title && (
@@ -144,6 +155,7 @@ export function Modal({ open, onClose, title, children, width = 440 }) {
             <button onClick={onClose} style={{
               background: 'none', border: 'none', cursor: 'pointer',
               color: 'var(--p600)', fontSize: 20, lineHeight: 1, padding: 4,
+              transition: 'color .15s',
             }}>×</button>
           </div>
         )}
@@ -158,11 +170,49 @@ export function Spinner({ size = 20, color = 'var(--p600)' }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
       style={{ animation: 'spin .8s linear infinite' }}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
       <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2.5" strokeOpacity=".2" />
       <path d="M12 2a10 10 0 0 1 10 10" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
     </svg>
   );
+}
+
+/* ── Skeleton ────────────────────────────────────────────── */
+export function Skeleton({ width = '100%', height = 18, style = {} }) {
+  return (
+    <div className="skeleton" style={{ width, height, ...style }} />
+  );
+}
+
+export function SkeletonCard({ rows = 3 }) {
+  return (
+    <Card style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <Skeleton height={16} width="60%" />
+      {Array.from({ length: rows }).map((_, i) => (
+        <Skeleton key={i} height={13} width={i === rows - 1 ? '40%' : '100%'} />
+      ))}
+    </Card>
+  );
+}
+
+/* ── Count-up number ─────────────────────────────────────── */
+export function CountUp({ value, duration = 600, prefix = '', suffix = '' }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const end = parseFloat(String(value).replace(/[^0-9.]/g, ''));
+    if (isNaN(end)) { if (ref.current) ref.current.textContent = prefix + value + suffix; return; }
+    const start = 0;
+    const startTime = performance.now();
+    function update(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(start + (end - start) * eased);
+      if (ref.current) ref.current.textContent = prefix + current.toLocaleString() + suffix;
+      if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+  }, [value, duration, prefix, suffix]);
+  return <span ref={ref}>{prefix}{value}{suffix}</span>;
 }
 
 /* ── Avatar ─────────────────────────────────────────────── */
@@ -193,9 +243,10 @@ export function Empty({ icon = '✦', message }) {
 /* ── Stat card ───────────────────────────────────────────── */
 export function StatCard({ label, value, sub }) {
   return (
-    <div style={{
+    <div className="card-hover" style={{
       background: 'var(--p100)', borderRadius: 'var(--radius-md)',
       padding: '14px 16px', border: '1px solid var(--p200)',
+      transition: 'transform .15s, box-shadow .15s',
     }}>
       <div style={{ fontSize: 11, color: 'var(--p600)', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 4 }}>{label}</div>
       <div style={{ fontSize: 24, fontWeight: 500, color: 'var(--p800)' }}>{value}</div>

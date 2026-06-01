@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { useLocation, BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 import Sidebar      from './components/Sidebar';
 import Login        from './pages/Login';
@@ -13,6 +13,15 @@ import Schedule     from './pages/Schedule';
 import NewBooking   from './pages/NewBooking';
 import { Spinner }  from './components/UI';
 
+function AnimatedOutlet() {
+  const location = useLocation();
+  return (
+    <main key={location.pathname} className="page-enter" style={{ flex: 1, overflowY: 'auto' }}>
+      <Outlet />
+    </main>
+  );
+}
+
 function RequireAuth() {
   const { admin, loading } = useAuth();
   if (loading) return (
@@ -24,9 +33,7 @@ function RequireAuth() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar />
-      <main style={{ flex: 1, overflowY: 'auto' }}>
-        <Outlet />
-      </main>
+      <AnimatedOutlet />
     </div>
   );
 }
