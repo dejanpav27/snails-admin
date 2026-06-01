@@ -37,3 +37,4 @@ export const createClient = (data) => request('/clients', { method: 'POST', body
 export const updateClient = (id, data) => request(`/clients/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const getNotifications = () => request('/notifications');
 export const markNotificationsRead = () => request('/notifications/read', { method: 'POST' });
+export const markAllNotificationsRead = () => request('/notifications/read', { method: 'POST' });
