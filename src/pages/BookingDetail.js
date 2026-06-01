@@ -21,6 +21,7 @@ export default function BookingDetail() {
 
   async function changeStatus(status) {
     if (status === 'cancelled' && !window.confirm('Cancel this booking?')) return;
+    if (status === 'no_show' && !window.confirm('Mark this client as a no-show?')) return;
     const updated = await updateBookingStatus(id, status);
     setBooking(b => ({ ...b, status: updated.booking.status }));
   }
@@ -45,6 +46,7 @@ export default function BookingDetail() {
     : booking.service_name || '—';
   const duration = booking.total_duration_mins ?? booking.duration_mins ?? 0;
   const price    = booking.total_price ?? booking.price ?? 0;
+  const isPast   = new Date(booking.booked_at) < new Date();
 
   return (
     <div style={{ padding: 28, maxWidth: 680 }}>
@@ -68,8 +70,13 @@ export default function BookingDetail() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {booking.status === 'pending' && <Button size="sm" onClick={() => changeStatus('confirmed')}>Confirm</Button>}
-          {booking.status !== 'cancelled' && <Button size="sm" variant="danger" onClick={() => changeStatus('cancelled')}>Cancel</Button>}
-          {booking.status === 'cancelled' && (
+          {booking.status === 'confirmed' && isPast && (
+            <Button size="sm" variant="danger" style={{ background:'#fce7f3', color:'#9d174d', border:'1px solid #fbcfe8' }} onClick={() => changeStatus('no_show')}>
+              No-show
+            </Button>
+          )}
+          {booking.status !== 'cancelled' && booking.status !== 'no_show' && <Button size="sm" variant="danger" onClick={() => changeStatus('cancelled')}>Cancel</Button>}
+          {(booking.status === 'cancelled' || booking.status === 'no_show') && (
             <Button size="sm" variant="danger" onClick={handleDelete}>
               🗑 Delete permanently
             </Button>

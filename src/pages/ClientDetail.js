@@ -34,9 +34,10 @@ export default function ClientDetail() {
   if (!client)  return <div style={{ padding:28,color:'var(--p600)' }}>Client not found.</div>;
 
   // FIX: use b.price which now comes from total_price via the API fix
-  const totalSpend = (client.bookings||[])
+  const totalSpend  = (client.bookings||[])
     .filter(b => b.status !== 'cancelled')
     .reduce((s, b) => s + Number(b.price ?? 0), 0);
+  const noShowCount = (client.bookings||[]).filter(b => b.status === 'no_show').length;
 
   return (
     <div style={{ padding: 28, maxWidth: 760 }}>
@@ -45,7 +46,7 @@ export default function ClientDetail() {
         <h1 style={{ fontSize:20,fontWeight:500,color:'var(--p800)' }}>Client profile</h1>
       </div>
 
-      <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16 }}>
+      <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:16,marginBottom:16 }}>
         {/* Profile card */}
         <Card style={{ gridColumn:'1 / -1' }}>
           <div style={{ display:'flex',alignItems:'flex-start',justifyContent:'space-between' }}>
@@ -88,12 +89,13 @@ export default function ClientDetail() {
 
         {/* Stats */}
         {[
-          { label:'Total visits',  value:(client.bookings||[]).filter(b=>b.status!=='cancelled').length },
+          { label:'Total visits',  value:(client.bookings||[]).filter(b=>b.status!=='cancelled'&&b.status!=='no_show').length },
           { label:'Total spend',   value:formatPrice(totalSpend) },
+          { label:'No-shows',      value:noShowCount, warn: noShowCount > 0 },
         ].map(s => (
-          <div key={s.label} style={{ background:'var(--p100)',border:'1px solid var(--p200)',borderRadius:'var(--radius-md)',padding:'14px 16px' }}>
-            <div style={{ fontSize:11,color:'var(--p600)',textTransform:'uppercase',letterSpacing:.5,marginBottom:4 }}>{s.label}</div>
-            <div style={{ fontSize:22,fontWeight:500,color:'var(--p800)' }}>{s.value}</div>
+          <div key={s.label} style={{ background: s.warn ? '#fce7f3' : 'var(--p100)', border:`1px solid ${s.warn ? '#fbcfe8' : 'var(--p200)'}`, borderRadius:'var(--radius-md)', padding:'14px 16px' }}>
+            <div style={{ fontSize:11, color: s.warn ? '#9d174d' : 'var(--p600)', textTransform:'uppercase', letterSpacing:.5, marginBottom:4 }}>{s.label}</div>
+            <div style={{ fontSize:22, fontWeight:500, color: s.warn ? '#9d174d' : 'var(--p800)' }}>{s.value}</div>
           </div>
         ))}
       </div>
