@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getServices, createService, updateService, deleteService } from '../lib/api';
+import { getServices, createService, updateService, deleteService, deleteServicePermanent } from '../lib/api';
 import { formatPrice } from '../lib/utils';
 import { Card, Button, Input, Select, Modal, Spinner, Empty } from '../components/UI';
 
@@ -8,7 +8,7 @@ const CATEGORIES = ['Manicure', 'Pedicure', 'Nail art', 'Extras'];
 export default function Services() {
   const [services, setServices] = useState([]);
   const [loading,  setLoading]  = useState(true);
-  const [modal,    setModal]    = useState(null); // null | 'add' | service object
+  const [modal,    setModal]    = useState(null);
 
   useEffect(() => { load(); }, []);
 
@@ -105,6 +105,7 @@ function ServiceModal({ open, service, onClose, onSaved }) {
   useEffect(() => {
     if (service) setForm({ name: service.name, category: service.category, duration_mins: service.duration_mins, price: service.price });
     else setForm({ name: '', category: 'Manicure', duration_mins: 60, price: '' });
+    setError('');
   }, [service, open]);
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
@@ -116,6 +117,16 @@ function ServiceModal({ open, service, onClose, onSaved }) {
     try {
       if (isEdit) await updateService(service.id, { ...form, duration_mins: Number(form.duration_mins), price: Number(form.price) });
       else        await createService({ ...form, duration_mins: Number(form.duration_mins), price: Number(form.price) });
+      onSaved();
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm('Permanently delete this service? This cannot be undone.')) return;
+    setLoading(true); setError('');
+    try {
+      await deleteServicePermanent(service.id);
       onSaved();
     } catch (err) { setError(err.message); }
     finally { setLoading(false); }
@@ -133,9 +144,16 @@ function ServiceModal({ open, service, onClose, onSaved }) {
           <Input label="Price (RSD) *" type="number" min={0} step={0.5} value={form.price} onChange={set('price')} placeholder="35.00" />
         </div>
         {error && <p style={{ fontSize: 13, color: '#dc2626' }}>{error}</p>}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
-          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit" loading={loading}>{isEdit ? 'Save changes' : 'Add service'}</Button>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', marginTop: 4 }}>
+          {isEdit && (
+            <Button type="button" variant="danger" onClick={handleDelete} loading={loading}>
+              Delete
+            </Button>
+          )}
+          <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit" loading={loading}>{isEdit ? 'Save changes' : 'Add service'}</Button>
+          </div>
         </div>
       </form>
     </Modal>
