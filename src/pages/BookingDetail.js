@@ -22,8 +22,14 @@ export default function BookingDetail() {
   async function changeStatus(status) {
     if (status === 'cancelled' && !window.confirm('Cancel this booking?')) return;
     if (status === 'no_show' && !window.confirm('Mark this client as a no-show?')) return;
-    const updated = await updateBookingStatus(id, status);
-    setBooking(b => ({ ...b, status: updated.booking.status }));
+    try {
+      await updateBookingStatus(id, status);
+      // Reload full booking to get fresh data
+      const fresh = await getBooking(id);
+      setBooking(fresh);
+    } catch (err) {
+      alert(err.message || 'Failed to update status');
+    }
   }
 
   async function handleDelete() {
