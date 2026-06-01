@@ -11,16 +11,8 @@ import ClientDetail from './pages/ClientDetail';
 import Services     from './pages/Services';
 import Schedule     from './pages/Schedule';
 import NewBooking   from './pages/NewBooking';
+import Analytics    from './pages/Analytics';
 import { Spinner }  from './components/UI';
-
-function AnimatedOutlet() {
-  const location = useLocation();
-  return (
-    <main key={location.pathname} className="page-enter" style={{ flex: 1, overflowY: 'auto' }}>
-      <Outlet />
-    </main>
-  );
-}
 
 function RequireAuth() {
   const { admin, loading } = useAuth();
@@ -33,7 +25,9 @@ function RequireAuth() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar />
-      <AnimatedOutlet />
+      <main style={{ flex: 1, overflowY: 'auto' }}>
+        <Outlet />
+      </main>
     </div>
   );
 }
@@ -54,6 +48,7 @@ export default function App() {
             <Route path="/services"      element={<Services />} />
             <Route path="/schedule"      element={<Schedule />} />
             <Route path="/new"           element={<NewBooking />} />
+            <Route path="/analytics"      element={<Analytics />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

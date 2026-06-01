@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import { Button } from './UI';
 import { getNotifications, markAllNotificationsRead } from '../lib/api';
@@ -12,6 +12,7 @@ const NAV = [
   { to: '/clients',   label: 'Clients',     icon: '◎' },
   { to: '/services',  label: 'Services',    icon: '✦' },
   { to: '/schedule',  label: 'Schedule',    icon: '⏱' },
+  { to: '/analytics', label: 'Analytics',   icon: '◑' },
   { to: '/new',       label: 'New booking', icon: '+' },
 ];
 
@@ -35,33 +36,20 @@ function notificationIcon(type) {
 
 export default function Sidebar() {
   const { admin, logout } = useAuth();
-  const navigate  = useNavigate();
-  const location  = useLocation();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [unread, setUnread]               = useState(0);
   const [open, setOpen]                   = useState(false);
   const bellRef = useRef(null);
-
-  // Sliding indicator
-  const navRef   = useRef(null);
-  const pillRef  = useRef(null);
-  const [pillStyle, setPillStyle] = useState({ top: 0, height: 0, opacity: 0 });
-
-  useEffect(() => {
-    if (!navRef.current) return;
-    const active = navRef.current.querySelector('[data-active="true"]');
-    if (active) {
-      const { offsetTop, offsetHeight } = active;
-      setPillStyle({ top: offsetTop, height: offsetHeight, opacity: 1 });
-    }
-  }, [location.pathname]);
 
   const fetchNotifications = useCallback(async () => {
     try {
       const data = await getNotifications();
       setNotifications(data.notifications || []);
       setUnread(data.unread_count || 0);
-    } catch {}
+    } catch {
+      // silently fail
+    }
   }, []);
 
   useEffect(() => {
@@ -72,7 +60,9 @@ export default function Sidebar() {
 
   useEffect(() => {
     function handleClick(e) {
-      if (bellRef.current && !bellRef.current.contains(e.target)) setOpen(false);
+      if (bellRef.current && !bellRef.current.contains(e.target)) {
+        setOpen(false);
+      }
     }
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
@@ -110,40 +100,20 @@ export default function Sidebar() {
         />
       </div>
 
-      <nav ref={navRef} style={{ flex: 1, padding: '12px 0', overflowY: 'auto', position: 'relative' }}>
-        {/* Sliding pill indicator */}
-        <div ref={pillRef} style={{
-          position: 'absolute',
-          left: 0, right: 0,
-          top: pillStyle.top,
-          height: pillStyle.height,
-          background: 'var(--p200)',
-          borderLeft: '3px solid var(--p600)',
-          borderRadius: '0 var(--radius-sm) var(--radius-sm) 0',
-          transition: 'top .2s cubic-bezier(.4,0,.2,1), height .2s cubic-bezier(.4,0,.2,1)',
-          opacity: pillStyle.opacity,
-          pointerEvents: 'none',
-          zIndex: 0,
-        }} />
-
+      <nav style={{ flex: 1, padding: '12px 0', overflowY: 'auto' }}>
         {NAV.map(({ to, label, icon }) => (
           <NavLink key={to} to={to} end={to === '/'} style={({ isActive }) => ({
             display: 'flex', alignItems: 'center', gap: 10,
             padding: '9px 20px',
             fontSize: 13, fontWeight: isActive ? 500 : 400,
             color: isActive ? 'var(--p800)' : 'var(--p700)',
+            background: isActive ? 'var(--p200)' : 'transparent',
+            borderLeft: `3px solid ${isActive ? 'var(--p600)' : 'transparent'}`,
+            transition: 'background .15s',
             textDecoration: 'none',
-            position: 'relative', zIndex: 1,
-            transition: 'color .15s',
-          })}
-          data-active={location.pathname === to || (to !== '/' && location.pathname.startsWith(to)) ? 'true' : 'false'}
-          >
-            {({ isActive }) => (
-              <>
-                <span style={{ fontSize: 16, opacity: isActive ? 1 : .7, transition: 'opacity .15s' }}>{icon}</span>
-                {label}
-              </>
-            )}
+          })}>
+            <span style={{ fontSize: 16, opacity: .8 }}>{icon}</span>
+            {label}
           </NavLink>
         ))}
       </nav>
