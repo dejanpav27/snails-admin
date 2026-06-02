@@ -35,7 +35,7 @@ export default function Login() {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '32px 20px',
+      padding: '16px 20px',
       position: 'relative',
       overflow: 'hidden',
     }}>
@@ -51,7 +51,7 @@ export default function Login() {
       </div>
 
       {/* Sparkle */}
-      <div style={{ fontSize: 14, color: 'var(--p600)', marginBottom: 28, animation: 'slideUp .4s ease both .05s', opacity: .7 }}>✦</div>
+      <div style={{ fontSize: 14, color: 'var(--p600)', marginBottom: 16, animation: 'slideUp .4s ease both .05s', opacity: .7 }}>✦</div>
 
       {/* Card */}
       <div style={{
@@ -59,7 +59,7 @@ export default function Login() {
         background: 'rgba(255,255,255,.85)',
         backdropFilter: 'blur(12px)',
         borderRadius: 24,
-        padding: '40px 44px',
+        padding: '28px 36px',
         boxShadow: '0 8px 40px rgba(114,36,62,.1)',
         animation: 'slideUp .4s ease both .08s',
       }}>
@@ -197,7 +197,7 @@ export default function Login() {
       </div>
 
       {/* Footer */}
-      <div style={{ textAlign: 'center', marginTop: 28, animation: 'slideUp .4s ease both .15s' }}>
+      <div style={{ textAlign: 'center', marginTop: 16, animation: 'slideUp .4s ease both .15s' }}>
         <p style={{ fontSize: 13, color: 'var(--p700)', fontWeight: 500 }}>Snails Nail Studio</p>
         <p style={{ fontSize: 13, color: 'var(--p500)', marginTop: 4 }}>✦</p>
       </div>
