@@ -9,6 +9,7 @@ export default function Bookings() {
   const [bookings, setBookings] = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [filters,  setFilters]  = useState({ date: '', status: '' });
+  const [search,   setSearch]   = useState('');
 
   useEffect(() => {
     setLoading(true);
@@ -26,6 +27,12 @@ export default function Bookings() {
     await updateBookingStatus(id, status);
     setBookings(b => b.map(x => x.id === id ? { ...x, status } : x));
   }
+
+  const filtered = bookings.filter(b =>
+    !search || b.client.name.toLowerCase().includes(search.toLowerCase()) ||
+    (b.client.phone || '').includes(search) ||
+    (b.client.email || '').toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div style={{ padding: 28, maxWidth: 960 }}>
@@ -51,12 +58,25 @@ export default function Bookings() {
           <option value="confirmed">Confirmed</option>
           <option value="cancelled">Cancelled</option>
         </Select>
-        {(filters.date || filters.status) && (
-          <Button variant="ghost" size="sm" onClick={() => setFilters({ date: '', status: '' })}>
+        <Input
+          placeholder="Search by client name..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ width: 220 }}
+        />
+        {(filters.date || filters.status || search) && (
+          <Button variant="ghost" size="sm" onClick={() => { setFilters({ date: '', status: '' }); setSearch(''); }}>
             Clear filters
           </Button>
         )}
       </div>
+
+      {/* Search results count */}
+      {search && (
+        <p style={{ fontSize:12, color:'var(--p500)', marginBottom:10 }}>
+          {filtered.length} result{filtered.length !== 1 ? 's' : ''} for "{search}"
+        </p>
+      )}
 
       <Card style={{ padding: 0, overflow: 'hidden' }}>
         {loading ? (
@@ -73,7 +93,7 @@ export default function Bookings() {
               </tr>
             </thead>
             <tbody>
-              {bookings.map((b, i) => {
+              {filtered.map((b, i) => {
                 // FIX: show all services for multi-service bookings
                 const serviceLabel = b.services && b.services.length > 1
                   ? b.services.map(s => s.name).join(' + ')
