@@ -70,6 +70,7 @@ export default function ClientDetail() {
                 </div>
               </div>
             </div>
+            <Button size="sm" variant="danger" onClick={handleDelete}>Delete</Button>
             <Button size="sm" variant="outline" onClick={() => setEditing(!editing)}>
               {editing ? 'Discard' : 'Edit'}
             </Button>
