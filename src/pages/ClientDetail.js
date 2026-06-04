@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getClient, updateClient } from '../lib/api';
+import { getClient, updateClient, request } from '../lib/api';
+const deleteClient = (id) => request(`/clients/${id}`, { method: 'DELETE' });
 import { formatDateTime, formatPrice } from '../lib/utils';
 import { Card, Avatar, Button, Input, Textarea, StatusBadge, Spinner } from '../components/UI';
 
@@ -38,6 +39,16 @@ export default function ClientDetail() {
     .filter(b => b.status !== 'cancelled')
     .reduce((s, b) => s + Number(b.price ?? 0), 0);
   const noShowCount = (client.bookings||[]).filter(b => b.status === 'no_show').length;
+
+  async function handleDelete() {
+    if (!window.confirm('Delete this client? This will also delete all their cancelled and no-show bookings.')) return;
+    try {
+      await deleteClient(id);
+      navigate('/clients');
+    } catch (err) {
+      alert(err.message || 'Failed to delete client');
+    }
+  }
 
   return (
     <div style={{ padding: 28, maxWidth: 760 }}>
