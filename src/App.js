@@ -12,12 +12,13 @@ import Services     from './pages/Services';
 import Schedule     from './pages/Schedule';
 import NewBooking   from './pages/NewBooking';
 import Analytics    from './pages/Analytics';
+import Gallery      from './pages/Gallery';
 import { Spinner }  from './components/UI';
 
 function AnimatedOutlet() {
   const location = useLocation();
   return (
-    <main key={location.pathname} className="page-enter" style={{ flex: 1, overflowY: 'auto' }}>
+    <main key={location.pathname} className="page-enter" style={{ flex:1, overflowY:'auto' }}>
       <Outlet />
     </main>
   );
@@ -26,13 +27,13 @@ function AnimatedOutlet() {
 function RequireAuth() {
   const { admin, loading } = useAuth();
   if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'100vh' }}>
       <Spinner size={32} />
     </div>
   );
   if (!admin) return <Navigate to="/login" replace />;
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div style={{ display:'flex', minHeight:'100vh' }}>
       <Sidebar />
       <AnimatedOutlet />
     </div>
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="/schedule"      element={<Schedule />} />
             <Route path="/new"           element={<NewBooking />} />
             <Route path="/analytics"     element={<Analytics />} />
+            <Route path="/gallery"       element={<Gallery />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

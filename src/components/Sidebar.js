@@ -12,7 +12,6 @@ const NAV = [
   { to: '/clients',   label: 'Clients',     icon: '◎' },
   { to: '/services',  label: 'Services',    icon: '✦' },
   { to: '/schedule',  label: 'Schedule',    icon: '⏱' },
-  { to: '/analytics', label: 'Analytics',   icon: '◑' },
   { to: '/new',       label: 'New booking', icon: '+' },
 ];
 
