@@ -73,7 +73,7 @@ export default function Schedule() {
     const day = schedule.find(d => d.day_of_week === dayOfWeek);
     setSaving(dayOfWeek);
     try {
-      const result = await updateDay(dayOfWeek, { is_open: day.is_open, open_time: day.open_time, close_time: day.close_time });
+      const result = await updateDay(dayOfWeek, { is_open: day.is_open, open_time: day.open_time, close_time: day.close_time, break_start: day.break_start || null, break_end: day.break_end || null });
       setSchedule(s => s.map(d => d.day_of_week === dayOfWeek ? result : d));
       setSaved(dayOfWeek);
       setTimeout(() => setSaved(null), 2000);
@@ -141,6 +141,18 @@ export default function Schedule() {
                   <span style={{ fontSize:12, color:'var(--p500)' }}>to</span>
                   <select value={day.close_time.slice(0,5)} onChange={e => handleChange(day.day_of_week, 'close_time', e.target.value)}
                     style={{ padding:'6px 10px', fontSize:13, border:'1px solid var(--p200)', borderRadius:8, color:'var(--p800)', background:'#fff', cursor:'pointer' }}>
+                    {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  <span style={{ fontSize:11, color:'var(--p400)', marginLeft:4 }}>pauza</span>
+                  <select value={day.break_start ? day.break_start.slice(0,5) : ''} onChange={e => handleChange(day.day_of_week, 'break_start', e.target.value || null)}
+                    style={{ padding:'6px 10px', fontSize:13, border:'1px solid var(--p200)', borderRadius:8, color:'var(--p800)', background:'#fff', cursor:'pointer' }}>
+                    <option value="">—</option>
+                    {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  <span style={{ fontSize:12, color:'var(--p500)' }}>–</span>
+                  <select value={day.break_end ? day.break_end.slice(0,5) : ''} onChange={e => handleChange(day.day_of_week, 'break_end', e.target.value || null)}
+                    style={{ padding:'6px 10px', fontSize:13, border:'1px solid var(--p200)', borderRadius:8, color:'var(--p800)', background:'#fff', cursor:'pointer' }}>
+                    <option value="">—</option>
                     {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
