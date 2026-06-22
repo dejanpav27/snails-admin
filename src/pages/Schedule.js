@@ -122,47 +122,55 @@ export default function Schedule() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 40 }}>
         {schedule.map(day => (
           <Card key={day.day_of_week} style={{ padding: '14px 18px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 140 }}>
-                <button
-                  onClick={() => handleChange(day.day_of_week, 'is_open', !day.is_open)}
-                  style={{ width:38, height:22, borderRadius:11, background: day.is_open ? 'var(--p600)' : 'var(--p200)', border:'none', cursor:'pointer', position:'relative', transition:'background .2s', flexShrink:0 }}
-                >
-                  <span style={{ position:'absolute', top:3, left: day.is_open ? 19 : 3, width:16, height:16, borderRadius:'50%', background:'#fff', transition:'left .2s' }} />
-                </button>
-                <span style={{ fontSize:14, fontWeight:500, color:'var(--p800)' }}>{DAYS[day.day_of_week]}</span>
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {/* Row 1: toggle + hours + save */}
+              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:140 }}>
+                  <button
+                    onClick={() => handleChange(day.day_of_week, 'is_open', !day.is_open)}
+                    style={{ width:38, height:22, borderRadius:11, background: day.is_open ? 'var(--p600)' : 'var(--p200)', border:'none', cursor:'pointer', position:'relative', transition:'background .2s', flexShrink:0 }}
+                  >
+                    <span style={{ position:'absolute', top:3, left: day.is_open ? 19 : 3, width:16, height:16, borderRadius:'50%', background:'#fff', transition:'left .2s' }} />
+                  </button>
+                  <span style={{ fontSize:14, fontWeight:500, color:'var(--p800)' }}>{DAYS[day.day_of_week]}</span>
+                </div>
+                {day.is_open ? (
+                  <div style={{ display:'flex', alignItems:'center', gap:8, flex:1 }}>
+                    <select value={day.open_time.slice(0,5)} onChange={e => handleChange(day.day_of_week, 'open_time', e.target.value)}
+                      style={{ padding:'6px 10px', fontSize:13, border:'1px solid var(--p200)', borderRadius:8, color:'var(--p800)', background:'#fff', cursor:'pointer' }}>
+                      {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                    <span style={{ fontSize:12, color:'var(--p500)' }}>to</span>
+                    <select value={day.close_time.slice(0,5)} onChange={e => handleChange(day.day_of_week, 'close_time', e.target.value)}
+                      style={{ padding:'6px 10px', fontSize:13, border:'1px solid var(--p200)', borderRadius:8, color:'var(--p800)', background:'#fff', cursor:'pointer' }}>
+                      {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                ) : (
+                  <span style={{ fontSize:13, color:'var(--p400)', flex:1 }}>Closed</span>
+                )}
+                <Button size="sm" onClick={() => handleSave(day.day_of_week)} loading={saving === day.day_of_week}
+                  style={saved === day.day_of_week ? { background:'#2e7d32', color:'#fff' } : {}}>
+                  {saved === day.day_of_week ? '✓ Saved' : 'Save'}
+                </Button>
               </div>
-              {day.is_open ? (
-                <div style={{ display:'flex', alignItems:'center', gap:8, flex:1 }}>
-                  <select value={day.open_time.slice(0,5)} onChange={e => handleChange(day.day_of_week, 'open_time', e.target.value)}
-                    style={{ padding:'6px 10px', fontSize:13, border:'1px solid var(--p200)', borderRadius:8, color:'var(--p800)', background:'#fff', cursor:'pointer' }}>
-                    {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                  <span style={{ fontSize:12, color:'var(--p500)' }}>to</span>
-                  <select value={day.close_time.slice(0,5)} onChange={e => handleChange(day.day_of_week, 'close_time', e.target.value)}
-                    style={{ padding:'6px 10px', fontSize:13, border:'1px solid var(--p200)', borderRadius:8, color:'var(--p800)', background:'#fff', cursor:'pointer' }}>
-                    {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                  <span style={{ fontSize:11, color:'var(--p400)', marginLeft:4 }}>pauza</span>
+              {/* Row 2: break time (only if open) */}
+              {day.is_open && (
+                <div style={{ display:'flex', alignItems:'center', gap:8, paddingLeft:148 }}>
+                  <span style={{ fontSize:11, color:'var(--p500)', fontWeight:500 }}>Pauza:</span>
                   <select value={day.break_start ? day.break_start.slice(0,5) : ''} onChange={e => handleChange(day.day_of_week, 'break_start', e.target.value || null)}
-                    style={{ padding:'6px 10px', fontSize:13, border:'1px solid var(--p200)', borderRadius:8, color:'var(--p800)', background:'#fff', cursor:'pointer' }}>
+                    style={{ padding:'5px 8px', fontSize:12, border:'1px solid var(--p200)', borderRadius:8, color:'var(--p800)', background:'#fff', cursor:'pointer' }}>
                     <option value="">—</option>
                     {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                   <span style={{ fontSize:12, color:'var(--p500)' }}>–</span>
                   <select value={day.break_end ? day.break_end.slice(0,5) : ''} onChange={e => handleChange(day.day_of_week, 'break_end', e.target.value || null)}
-                    style={{ padding:'6px 10px', fontSize:13, border:'1px solid var(--p200)', borderRadius:8, color:'var(--p800)', background:'#fff', cursor:'pointer' }}>
+                    style={{ padding:'5px 8px', fontSize:12, border:'1px solid var(--p200)', borderRadius:8, color:'var(--p800)', background:'#fff', cursor:'pointer' }}>
                     <option value="">—</option>
                     {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
-              ) : (
-                <span style={{ fontSize:13, color:'var(--p400)', flex:1 }}>Closed</span>
               )}
-              <Button size="sm" onClick={() => handleSave(day.day_of_week)} loading={saving === day.day_of_week}
-                style={saved === day.day_of_week ? { background:'#2e7d32', color:'#fff' } : {}}>
-                {saved === day.day_of_week ? '✓ Saved' : 'Save'}
-              </Button>
             </div>
           </Card>
         ))}
