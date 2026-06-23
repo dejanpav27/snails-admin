@@ -1,9 +1,96 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getClient, updateClient, request } from '../lib/api';
-const deleteClient = (id) => request(`/clients/${id}`, { method: 'DELETE' });
 import { formatDateTime, formatPrice } from '../lib/utils';
-import { Card, Avatar, Button, Input, Textarea, StatusBadge, Spinner } from '../components/UI';
+import { Card, Button, Input, Textarea, StatusBadge, Spinner } from '../components/UI';
+
+const deleteClient = (id) => request(`/clients/${id}`, { method: 'DELETE' });
+const updateAvatar = (id, avatar_url) => request(`/clients/${id}/avatar`, { method: 'PATCH', body: JSON.stringify({ avatar_url }) });
+
+const CLOUD  = 'dl67turkw';
+const PRESET = 'snails';
+
+async function uploadToCloudinary(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', PRESET);
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd });
+  const data = await res.json();
+  if (!data.secure_url) throw new Error('Upload failed');
+  return data.secure_url;
+}
+
+function ClientAvatar({ client, onUploaded }) {
+  const fileRef     = useRef(null);
+  const [uploading, setUploading] = useState(false);
+  const initials = client.name?.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?';
+  const hue = client.name ? (client.name.charCodeAt(0) * 37 + (client.name.charCodeAt(1) || 0) * 13) % 360 : 300;
+
+  async function handleFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadToCloudinary(file);
+      await updateAvatar(client.id, url);
+      onUploaded(url);
+    } catch (err) { alert(err.message); }
+    finally { setUploading(false); e.target.value = ''; }
+  }
+
+  async function handleRemove() {
+    await updateAvatar(client.id, null);
+    onUploaded(null);
+  }
+
+  return (
+    <div style={{ position: 'relative', flexShrink: 0 }}>
+      {/* Avatar circle */}
+      <div style={{
+        width: 64, height: 64, borderRadius: '50%',
+        overflow: 'hidden',
+        border: '2px solid var(--p200)',
+        background: `hsl(${hue}, 40%, 88%)`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'pointer', position: 'relative',
+      }}
+        onClick={() => fileRef.current.click()}
+        title="Click to upload photo"
+      >
+        {client.avatar_url ? (
+          <img src={client.avatar_url} alt={client.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          <span style={{ fontSize: 22, fontWeight: 600, color: `hsl(${hue}, 45%, 32%)` }}>{initials}</span>
+        )}
+        {/* Overlay on hover */}
+        <div style={{
+          position: 'absolute', inset: 0, background: 'rgba(0,0,0,.35)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          opacity: 0, transition: 'opacity .15s', borderRadius: '50%',
+          fontSize: 18,
+        }}
+          onMouseEnter={e => e.currentTarget.style.opacity = 1}
+          onMouseLeave={e => e.currentTarget.style.opacity = 0}
+        >
+          {uploading ? <Spinner size={18} color="#fff" /> : '📷'}
+        </div>
+      </div>
+
+      {/* Remove button */}
+      {client.avatar_url && !uploading && (
+        <button onClick={handleRemove} style={{
+          position: 'absolute', top: -4, right: -4,
+          width: 18, height: 18, borderRadius: '50%',
+          background: 'var(--p600)', border: 'none', cursor: 'pointer',
+          color: '#fff', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          lineHeight: 1,
+        }}>×</button>
+      )}
+
+      <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
+    </div>
+  );
+}
 
 export default function ClientDetail() {
   const { id }    = useParams();
@@ -29,26 +116,19 @@ export default function ClientDetail() {
     finally { setSaving(false); }
   }
 
+  async function handleDelete() {
+    if (!window.confirm('Delete this client? This will also delete all their cancelled and no-show bookings.')) return;
+    try { await deleteClient(id); navigate('/clients'); }
+    catch (err) { alert(err.message || 'Failed to delete client'); }
+  }
+
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
   if (loading) return <div style={{ display:'flex',justifyContent:'center',padding:80 }}><Spinner /></div>;
   if (!client)  return <div style={{ padding:28,color:'var(--p600)' }}>Client not found.</div>;
 
-  // FIX: use b.price which now comes from total_price via the API fix
-  const totalSpend  = (client.bookings||[])
-    .filter(b => b.status !== 'cancelled')
-    .reduce((s, b) => s + Number(b.price ?? 0), 0);
+  const totalSpend  = (client.bookings||[]).filter(b => b.status !== 'cancelled').reduce((s, b) => s + Number(b.price ?? 0), 0);
   const noShowCount = (client.bookings||[]).filter(b => b.status === 'no_show').length;
-
-  async function handleDelete() {
-    if (!window.confirm('Delete this client? This will also delete all their cancelled and no-show bookings.')) return;
-    try {
-      await deleteClient(id);
-      navigate('/clients');
-    } catch (err) {
-      alert(err.message || 'Failed to delete client');
-    }
-  }
 
   return (
     <div style={{ padding: 28, maxWidth: 760 }}>
@@ -58,22 +138,24 @@ export default function ClientDetail() {
       </div>
 
       <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:16,marginBottom:16 }}>
-        {/* Profile card */}
         <Card style={{ gridColumn:'1 / -1' }}>
           <div style={{ display:'flex',alignItems:'flex-start',justifyContent:'space-between' }}>
             <div style={{ display:'flex',alignItems:'center',gap:14 }}>
-              <Avatar name={client.name} size={52} />
+              <ClientAvatar client={client} onUploaded={url => setClient(c => ({ ...c, avatar_url: url }))} />
               <div>
                 <div style={{ fontSize:17,fontWeight:500,color:'var(--p800)' }}>{client.name}</div>
                 <div style={{ fontSize:12,color:'var(--p600)',marginTop:2 }}>
                   Client since {new Date(client.created_at).toLocaleDateString('en-GB',{month:'long',year:'numeric'})}
                 </div>
+                <div style={{ fontSize:11,color:'var(--p400)',marginTop:2 }}>Click photo to change</div>
               </div>
             </div>
-            <Button size="sm" variant="danger" onClick={handleDelete}>Delete</Button>
-            <Button size="sm" variant="outline" onClick={() => setEditing(!editing)}>
-              {editing ? 'Discard' : 'Edit'}
-            </Button>
+            <div style={{ display:'flex', gap:8 }}>
+              <Button size="sm" variant="danger" onClick={handleDelete}>Delete</Button>
+              <Button size="sm" variant="outline" onClick={() => setEditing(!editing)}>
+                {editing ? 'Discard' : 'Edit'}
+              </Button>
+            </div>
           </div>
 
           {editing ? (
@@ -99,7 +181,6 @@ export default function ClientDetail() {
           )}
         </Card>
 
-        {/* Stats */}
         {[
           { label:'Total visits',  value:(client.bookings||[]).filter(b=>b.status!=='cancelled'&&b.status!=='no_show').length },
           { label:'Total spend',   value:formatPrice(totalSpend) },
@@ -112,7 +193,6 @@ export default function ClientDetail() {
         ))}
       </div>
 
-      {/* Booking history */}
       <Card style={{ padding:0,overflow:'hidden' }}>
         <div style={{ padding:'14px 18px',borderBottom:'1px solid var(--p200)',display:'flex',justifyContent:'space-between',alignItems:'center' }}>
           <h3 style={{ fontSize:14,fontWeight:500,color:'var(--p800)' }}>Booking history</h3>
@@ -129,7 +209,6 @@ export default function ClientDetail() {
                   onMouseLeave={e => e.currentTarget.style.background='transparent'}
                 >
                   <td style={{ padding:'10px 16px',fontSize:13,color:'var(--p700)' }}>{formatDateTime(b.booked_at)}</td>
-                  {/* FIX: service_name now includes all services joined with ' + ' from the API */}
                   <td style={{ padding:'10px 16px',fontSize:13,color:'var(--p800)',fontWeight:500 }}>{b.service_name}</td>
                   <td style={{ padding:'10px 16px',fontSize:13,color:'var(--p600)' }}>{b.duration_mins} min</td>
                   <td style={{ padding:'10px 16px',fontSize:13,fontWeight:500,color:'var(--p600)' }}>{formatPrice(b.price)}</td>
